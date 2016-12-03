@@ -79,6 +79,9 @@ class Poseidon::ConsumerGroup
   # @attr_reader [Hash] options Consumer options
   attr_reader :options
 
+  # @attr_reader [Integer] loop delay extracted from options and exposed
+  attr_reader :loop_delay
+
   # Create a new consumer group, which processes all partition of the specified topic.
   #
   # @param [String] name Group name
@@ -97,6 +100,7 @@ class Poseidon::ConsumerGroup
   #
   # @api public
   def initialize(name, brokers, zookeepers, topic, options = {})
+    puts options.inspect
     @name       = name
     @topic      = topic
     @zk         = ::ZK.new(zookeepers.join(","))
@@ -110,6 +114,7 @@ class Poseidon::ConsumerGroup
     @registered = false
     @logger = @options.delete(:logger) || Logger.new(STDOUT)
     @log_level = @options.delete(:log_level) || :debug
+    @loop_delay = @options.delete(:loop_delay) || DEFAULT_LOOP_DELAY
 
     register! unless options.delete(:register) == false
   end
@@ -336,7 +341,7 @@ class Poseidon::ConsumerGroup
   #
   # @api public
   def fetch_loop(opts = {})
-    delay = opts[:loop_delay] || options[:loop_delay] || DEFAULT_LOOP_DELAY
+    delay = opts[:loop_delay] || @loop_delay
 
     loop do
       mp = false
