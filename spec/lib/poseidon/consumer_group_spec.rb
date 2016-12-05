@@ -138,12 +138,12 @@ describe Poseidon::ConsumerGroup do
 
   it "should accept a loop_delay" do
     cg = described_class.new "my-group", ["localhost:29092", "localhost:29091"], ["localhost:22181"], "mytopic", logger: logger, loop_delay: 5
-    cg.loop_delay == 5
+    cg.loop_delay.should == 5
   end
 
   it "should accept a loop_delay under 1sec" do
     cg = described_class.new "my-group", ["localhost:29092", "localhost:29091"], ["localhost:22181"], "mytopic", logger: logger, loop_delay: 0.1
-    cg.loop_delay == 0.1
+    cg.loop_delay.should == 0.1
   end
 
   describe "consumer" do

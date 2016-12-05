@@ -39,7 +39,11 @@ class Poseidon::ConsumerGroup
       offset = group.offset(partition)
       # if trail is set to true, it should always use latest offset. Otherwise use the zookeeper offset
       # if there was one, or earliset available if there wasn't.
-      offset = (options[:trail] ? :latest_offset : (offset == 0 ? :earliest_offset : offset))
+      if options[:trail]
+        offset = :latest_offset
+      else
+        offset = :earliest_offset if offset == 0
+      end
       options.delete(:trail)
       super group.id, broker.host, broker.port, group.topic, partition, offset, options
     end
@@ -100,7 +104,6 @@ class Poseidon::ConsumerGroup
   #
   # @api public
   def initialize(name, brokers, zookeepers, topic, options = {})
-    puts options.inspect
     @name       = name
     @topic      = topic
     @zk         = ::ZK.new(zookeepers.join(","))
