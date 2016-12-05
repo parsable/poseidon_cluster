@@ -37,7 +37,13 @@ class Poseidon::ConsumerGroup
     def initialize(group, partition, options = {})
       broker = group.leader(partition)
       offset = group.offset(partition)
-      offset = (options[:trail] ? :latest_offset : :earliest_offset) if offset == 0
+      # if trail is set to true, it should always use latest offset. Otherwise use the zookeeper offset
+      # if there was one, or earliset available if there wasn't.
+      if options[:trail]
+        offset = :latest_offset
+      else
+        offset = :earliest_offset if offset == 0
+      end
       options.delete(:trail)
       super group.id, broker.host, broker.port, group.topic, partition, offset, options
     end
@@ -77,6 +83,9 @@ class Poseidon::ConsumerGroup
   # @attr_reader [Hash] options Consumer options
   attr_reader :options
 
+  # @attr_reader [Integer] loop delay extracted from options and exposed
+  attr_reader :loop_delay
+
   # Create a new consumer group, which processes all partition of the specified topic.
   #
   # @param [String] name Group name
@@ -108,6 +117,7 @@ class Poseidon::ConsumerGroup
     @registered = false
     @logger = @options.delete(:logger) || Logger.new(STDOUT)
     @log_level = @options.delete(:log_level) || :debug
+    @loop_delay = @options.delete(:loop_delay) || DEFAULT_LOOP_DELAY
 
     register! unless options.delete(:register) == false
   end
@@ -334,7 +344,7 @@ class Poseidon::ConsumerGroup
   #
   # @api public
   def fetch_loop(opts = {})
-    delay = opts[:loop_delay] || options[:loop_delay] || DEFAULT_LOOP_DELAY
+    delay = opts[:loop_delay] || @loop_delay
 
     loop do
       mp = false
